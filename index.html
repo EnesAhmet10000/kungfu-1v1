@@ -308,7 +308,7 @@
 
                     {/* التعديل الرابع: جعل منطقة اللعب تتمدد وتصغر بدون ما تخرب الأبعاد */}
                     <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl border-2 md:border-4 border-gray-700 w-full max-w-4xl aspect-[8/5]">
-                        <video ref={videoRef} className="hidden" playsInline muted />
+                        <video ref={videoRef} style={{ position: 'absolute', opacity: 0, width: '1px', height: '1px' }} autoPlay playsInline muted />
                         
                         {/* استخدام object-cover يجعل الشاشة تملأ الفراغ بالكامل */}
                         <canvas ref={canvasRef} width={800} height={500} className="w-full h-full object-cover" />
@@ -359,5 +359,6 @@
     </script>
 </body>
 </html>
+
 
 
