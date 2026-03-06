@@ -78,7 +78,6 @@
                 osc.stop(ctx.currentTime + 0.1);
             };
 
-            // التعديل الجذري هنا: مسحنا window.Camera ووضعنا حلقة آمنة
             useEffect(() => {
                 let animationFrameId;
 
@@ -103,21 +102,18 @@
                             // المحاولة 1: الكاميرا الأمامية
                             stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
                         } catch(e) {
-                            // المحاولة 2: أي كاميرا متوفرة (كخطة بديلة)
+                            // المحاولة 2: أي كاميرا متوفرة
                             stream = await navigator.mediaDevices.getUserMedia({ video: true });
                         }
                         
                         if (videoRef.current) {
                             videoRef.current.srcObject = stream;
-                            
-                            // إجبار الجوال على تشغيل الفيديو
                             videoRef.current.setAttribute("playsinline", true);
-                            await videoRef.current.play();
 
+                            // التعديل هنا: نضع كود الاستماع (الانتظار) أولاً
                             videoRef.current.onloadeddata = () => {
-                                setCameraReady(true);
+                                setCameraReady(true); // هنا يختفي التعليق وتظهر زر "BAŞLA"
                                 
-                                // الحلقة الآمنة لإرسال الصور للذكاء الاصطناعي
                                 const detectFrame = async () => {
                                     if (videoRef.current && videoRef.current.readyState >= 2 && handsRef.current) {
                                         await handsRef.current.send({ image: videoRef.current });
@@ -126,14 +122,16 @@
                                 };
                                 detectFrame();
                             };
+
+                            // ثم نأمر الفيديو بالتشغيل
+                            await videoRef.current.play().catch(err => console.error("Play Error:", err));
                         }
                     } catch (e) {
-                        alert("You have to give access to your camera 📸");
+                        alert("Kamera izni gerekli veya kamera başka bir uygulamada açık!");
                     }
                 };
                 init();
 
-                // تنظيف الكاميرا عند إغلاق اللعبة
                 return () => {
                     if (animationFrameId) cancelAnimationFrame(animationFrameId);
                     if (videoRef.current && videoRef.current.srcObject) {
@@ -377,3 +375,4 @@
     </script>
 </body>
 </html>
+
