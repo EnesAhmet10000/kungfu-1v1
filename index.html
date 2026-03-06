@@ -41,7 +41,7 @@
             const handsRef = useRef(null);
             const timerRef = useRef(null);
 
-            // KOORDİNATLAR (الاحداثيات الداخلية تبقى 800x500 وسيتم تصغيرها تلقائياً بالشاشة)
+            // KOORDİNATLAR 
             const targetsP1 = [
                 { id: 0, x: 150, y: 150 },
                 { id: 1, x: 300, y: 150 },
@@ -78,7 +78,10 @@
                 osc.stop(ctx.currentTime + 0.1);
             };
 
+            // التعديل الجذري هنا: مسحنا window.Camera ووضعنا حلقة آمنة
             useEffect(() => {
+                let animationFrameId;
+
                 const init = async () => {
                     const hands = new window.Hands({
                         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
@@ -95,36 +98,55 @@
                     handsRef.current = hands;
 
                     try {
-                        // التعديل الثاني: طلب الكاميرا الأمامية صراحة للجوال
-                        const stream = await navigator.mediaDevices.getUserMedia({ 
-                            video: { 
-                                facingMode: "user",
-                            } 
-                        });
+                        let stream;
+                        try {
+                            // المحاولة 1: الكاميرا الأمامية
+                            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                        } catch(e) {
+                            // المحاولة 2: أي كاميرا متوفرة (كخطة بديلة)
+                            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        }
+                        
                         if (videoRef.current) {
                             videoRef.current.srcObject = stream;
-                            const camera = new window.Camera(videoRef.current, {
-                                onFrame: async () => {
-                                    if (handsRef.current) await handsRef.current.send({ image: videoRef.current });
-                                },
-                                width: 800,
-                                height: 500
-                            });
-                            camera.start();
-                            setCameraReady(true);
+                            
+                            // إجبار الجوال على تشغيل الفيديو
+                            videoRef.current.setAttribute("playsinline", true);
+                            await videoRef.current.play();
+
+                            videoRef.current.onloadeddata = () => {
+                                setCameraReady(true);
+                                
+                                // الحلقة الآمنة لإرسال الصور للذكاء الاصطناعي
+                                const detectFrame = async () => {
+                                    if (videoRef.current && videoRef.current.readyState >= 2 && handsRef.current) {
+                                        await handsRef.current.send({ image: videoRef.current });
+                                    }
+                                    animationFrameId = requestAnimationFrame(detectFrame);
+                                };
+                                detectFrame();
+                            };
                         }
                     } catch (e) {
                         alert("You have to give access to your camera 📸");
                     }
                 };
                 init();
+
+                // تنظيف الكاميرا عند إغلاق اللعبة
+                return () => {
+                    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                    if (videoRef.current && videoRef.current.srcObject) {
+                        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+                    }
+                };
             }, []);
 
             const onResults = (results) => {
                 if (!canvasRef.current) return;
                 const ctx = canvasRef.current.getContext('2d');
-                const W = canvasRef.current.width; // دائما 800 داخلياً
-                const H = canvasRef.current.height; // دائما 500 داخلياً
+                const W = canvasRef.current.width; 
+                const H = canvasRef.current.height; 
 
                 ctx.save();
                 ctx.clearRect(0, 0, W, H);
@@ -287,7 +309,6 @@
             return (
                 <div className="min-h-screen flex flex-col items-center justify-center p-2 font-sans w-full">
                     
-                    {/* التعديل الثالث: جعل لوحة النتائج متجاوبة وتصغر في الجوال */}
                     <div className="flex w-full max-w-4xl mb-2 md:mb-4 rounded-xl md:rounded-2xl overflow-hidden shadow-2xl border-2 md:border-4 border-gray-700">
                         <div className="flex-1 bg-yellow-400 p-2 md:p-4 flex flex-col items-center justify-center">
                             <h2 className="text-xs md:text-xl font-bold text-gray-800 text-center">1. OYUNCU</h2>
@@ -305,11 +326,9 @@
                         </div>
                     </div>
 
-                    {/* التعديل الرابع: جعل منطقة اللعب تتمدد وتصغر بدون ما تخرب الأبعاد */}
                     <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl border-2 md:border-4 border-gray-700 w-full max-w-4xl aspect-[8/5]">
                         <video ref={videoRef} style={{ position: 'absolute', opacity: 0, width: '1px', height: '1px' }} autoPlay playsInline muted />
                         
-                        {/* استخدام object-cover يجعل الشاشة تملأ الفراغ بالكامل */}
                         <canvas ref={canvasRef} width={800} height={500} className="w-full h-full object-cover" />
 
                         {gameState === 'menu' && (
@@ -358,7 +377,3 @@
     </script>
 </body>
 </html>
-
-
-
-
