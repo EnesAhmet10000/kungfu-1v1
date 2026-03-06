@@ -10,6 +10,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <style>
+    /* إضافة بسيطة لمنع السحب والتحديث في الجوال */
+    body { overscroll-behavior-y: contain; }
+</style>
 </head>
 <body class="bg-gray-900">
     <div id="root"></div>
@@ -284,7 +288,7 @@
             };
 
             return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-2 font-sans w-full overflow-hidden">
+                <div className="min-h-screen flex flex-col items-center justify-center p-2 font-sans w-full">
                     
                     {/* التعديل الثالث: جعل لوحة النتائج متجاوبة وتصغر في الجوال */}
                     <div className="flex w-full max-w-4xl mb-2 md:mb-4 rounded-xl md:rounded-2xl overflow-hidden shadow-2xl border-2 md:border-4 border-gray-700">
